@@ -43,11 +43,15 @@ def european_binomial(option, spot, rate, vol, div, steps):
     u = np.exp((rate - div) * h + vol * np.sqrt(h))
     d = np.exp((rate - div) * h - vol * np.sqrt(h))
     pstar = (np.exp(rate * h) - d) / ( u - d)
+    deltas=[]
+    betas=[]
+    premiums=np.zeros(num_nodes)
     
     for i in range(num_nodes):
         spot_t = spot * (u ** (steps - i)) * (d ** (i))
         call_t += option.payoff(spot_t) * binom.pmf(steps - i, steps, pstar)
-
+        premiums[i]=spot_t
+        
     call_t *= np.exp(-rate * expiry)
     
     return call_t
