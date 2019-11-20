@@ -46,12 +46,15 @@ def european_binomial(option, spot, rate, vol, div, steps):
     deltas=[]
     betas=[]
     premiums=np.zeros(num_nodes)
+    beta=np.zeros(num_nodes)
+    delta=np.zeros(num_nodes)
     
     for i in range(num_nodes):
         spot_t = spot * (u ** (steps - i)) * (d ** (i))
         call_t += option.payoff(spot_t) * binom.pmf(steps - i, steps, pstar)
         premiums[i]=spot_t
-        
+    
+ 
     call_t *= np.exp(-rate * expiry)
     
     return call_t
@@ -69,19 +72,36 @@ def american_binomial(option, spot, rate, vol, div, steps):
     disc = np.exp(-rate * h) 
     spot_t = np.zeros(num_nodes)
     prc_t = np.zeros(num_nodes)
+    beta=np.zeros(num_nodes)
+    delta=np.zeros(num_nodes)
+    counter=0
     
+    #creates our tree from the right to the left
     for i in range(num_nodes):
         spot_t[i] = spot * (u ** (steps - i)) * (d ** (i))
         prc_t[i] = option.payoff(spot_t[i])
 
-
+    #gets the actual price
     for i in range((steps - 1), -1, -1):
         for j in range(i+1):
             prc_t[j] = disc * (pstar * prc_t[j] + (1 - pstar) * prc_t[j+1])
+            
+            """
+            our attempt to return 
+            delta[counter]=(option.payoff(spot_t[j])-option.payoff(spot_t[j+1]))/(spot*(u-d))
+            
+            beta[counter]=np.exp(-rate*expiry)*((u*option.payoff(spot_t[j+1])-d*option.payoff(spot_t[j]))/(u-d))
+            """
+            
             spot_t[j] = spot_t[j] / u
+            #this is specific for an american call option
             prc_t[j] = np.maximum(prc_t[j], option.payoff(spot_t[j]))
+            
+            
+            #print(f'beta[{counter}]:{beta[counter]}, detla[{counter}]:{delta[counter]}, p[{counter}]:{prc_t[counter]}.')
+            counter+=1
                     
-    return prc_t[0] 
+    return prc_t[0]
 
 if __name__ == "__main__":
     print("This is a module. Not intended to be run standalone.")
