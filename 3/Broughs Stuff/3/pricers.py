@@ -1,6 +1,9 @@
 import numpy as np
 from scipy.stats import binom
 
+from collections import namedtuple
+PricerResult = namedtuple('PricerResult', ['price', 'stderr'])
+
 def european_binomial(option, spot, rate, vol, div, steps):
     strike = option.strike
     expiry = option.expiry
@@ -48,10 +51,44 @@ def american_binomial(option, spot, rate, vol, div, steps):
     return prc_t[0]
 
 
-def naive_monte_carlo_pricer():
-    # return (prc_t[0], stderr)
-    return 3.0
+def naive_monte_carlo_pricer(option,r,v,q,S,M):
+    #the equation that was given using the variables that are needed.
+    nudt = (r - q - 0.5 * v * v) * option.expiry
+    sigdt = v * np.sqrt(option.expiry)
+    z = np.random.normal(size=(M,))
+    
+    #finds the spot price for each of the points size=M
+    spot_t = S * np.exp(nudt + sigdt * z)
+    
+    #gets the payout for each option
+    payOut=option.payoff(spot_t)
+    
+    #gets the standard error
+    stde=payOut.mean()/np.sqrt(M)
+    #gets the average price of the option over all the iterations of the model
+    prc=np.exp(-r*option.expiry)*payOut.mean()
+    
+    return PricerResult(prc,stde)
 
+def antithetic_monte_carlo_pricer(option,r,v,q,S,M):
+    #the equation that was given using the variables that are needed.
+    nudt = (r - q - 0.5 * v * v) * option.expiry
+    sigdt = v * np.sqrt(option.expiry)
+    z = np.random.normal(size=(M,))
+    y=z*-1
+    z=np.concatenate((z,y))
+    #finds the spot price for each of the points size=M
+    spot_t = S * np.exp(nudt + sigdt * z)
+    
+    #gets the payout for each option
+    payOut=option.payoff(spot_t)
+    
+    #gets the standard error
+    stde=payOut.mean()/np.sqrt(M)
+    #gets the average price of the option over all the iterations of the model
+    prc=np.exp(-r*option.expiry)*payOut.mean()
+    
+    return PricerResult(prc,stde)
 
 
 if __name__ == "__main__":
