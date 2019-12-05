@@ -1,2 +1,2 @@
 # assign2
-This is for assignment 2 pricing American and European call options in FIN5350
+This is for assignments in pricing American and European options in FIN5350. Also using Monte Carlo methodology to determine option prices prices.
