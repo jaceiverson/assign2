@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.stats import binom
+import scipy.stats as stats
 
 from collections import namedtuple
 PricerResult = namedtuple('PricerResult', ['price', 'stderr'])
@@ -17,7 +17,7 @@ def european_binomial(option, spot, rate, vol, div, steps):
     
     for i in range(num_nodes):
         spot_t = spot * (u ** (steps - i)) * (d ** (i))
-        call_t += option.payoff(spot_t) * binom.pmf(steps - i, steps, pstar)
+        call_t += option.payoff(spot_t) * stats.binom.pmf(steps - i, steps, pstar)
 
     call_t *= np.exp(-rate * expiry)
     
@@ -90,6 +90,28 @@ def antithetic_monte_carlo_pricer(option,r,v,q,S,M):
     
     return PricerResult(prc,stde)
 
+def stratifiedSample(option,r,v,q,S,M):
+    nudt = (r - q - 0.5 * v * v) * option.expiry
+    sigdt = v * np.sqrt(option.expiry)
+    u=np.random.uniform(size=M)
+    uhat=np.zeros(M)
+    #rescales the sample
+    for i in range(M):
+        uhat[i]=(i+u[i])/M
+    z=stats.norm.ppf(uhat)
+    
+    #finds the spot price for each of the points size=M
+    spot_t = S * np.exp(nudt + sigdt * z)
+    
+    #gets the payout for each option
+    payOut=option.payoff(spot_t)
+    
+    #gets the standard error
+    stde=payOut.mean()/np.sqrt(M)
+    #gets the average price of the option over all the iterations of the model
+    prc=np.exp(-r*option.expiry)*payOut.mean()
+    
+    return PricerResult(prc,stde)
 
 if __name__ == "__main__":
     print("This is a module. Not intended to be run standalone.")
